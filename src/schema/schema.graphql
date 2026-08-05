@@ -1,0 +1,189 @@
+"""
+Anithing GraphQL Schema
+Lean & Enriched Schema: Combines basic identification with unique value-add fields
+(Cross-Provider Mapped IDs, High-Res TMDB Media, Intro/Outro Skip Timestamps, Mapped Episodes, Story Arcs)
+"""
+
+schema {
+  query: Query
+}
+
+"""
+Supported metadata providers for ID lookups
+"""
+enum ProviderEnum {
+  ANILIST
+  TMDB
+  TVDB
+  MAL
+  ANIDB
+}
+
+"""
+Airing status of the anime series or movie
+"""
+enum AnimeStatus {
+  RELEASING
+  FINISHED
+  NOT_YET_RELEASED
+  CANCELLED
+  HIATUS
+}
+
+"""
+Format or media type of the anime
+"""
+enum AnimeFormat {
+  TV
+  TV_SHORT
+  MOVIE
+  SPECIAL
+  OVA
+  ONA
+}
+
+"""
+Cross-provider IDs linked to an anime entry
+"""
+type ProviderIDs {
+  anilist: String
+  mal: String
+  tmdb: String
+  tvdb: String
+  anidb: String
+}
+
+"""
+Anime titles in Romaji, Japanese native, and English
+"""
+type Titles {
+  romaji: String
+  native: String
+  english: String
+}
+
+"""
+Start and end timestamps in seconds (for intro/outro skip intervals)
+"""
+type TimeRange {
+  start: Int
+  end: Int
+}
+
+"""
+Mapped episode details for an external provider (such as TMDB or TVDB)
+"""
+type ProviderEpisode {
+  provider: ProviderEnum!
+  season: Int
+  episode: Int!
+}
+
+"""
+Enriched episode details (skip intervals, filler flags, mapped provider episode numbers)
+"""
+type Episode {
+  episodeNumber: Int!
+  seasonNumber: Int
+  absoluteEpisodeNumber: Int
+  airDate: String
+  runtime: Int
+  isFiller: Boolean!
+  isRecap: Boolean!
+  thumbnail: String
+  title: String
+  introTimeRange: TimeRange
+  outroTimeRange: TimeRange
+  mappings: [ProviderEpisode!]
+}
+
+"""
+Episode list and count statistics
+"""
+type EpisodeData {
+  total: Int!
+  released: Int!
+  list: [Episode!]!
+}
+
+"""
+Enriched high-resolution media artwork (Posters, Backdrops, Wallpapers, Transparent Clear HD Logos)
+"""
+type MediaArtwork {
+  poster: String
+  banner: String
+  backdrop: String
+  background: String
+  clearHdLogo: String
+}
+
+"""
+Story arc grouping episodes together with custom arc artwork
+"""
+type Arc {
+  index: Int!
+  name: String!
+  episodeRange: TimeRange!
+  media: MediaArtwork
+}
+
+"""
+Core Enriched Anime Object
+"""
+type Anime {
+  id: ID!
+  providerIds: ProviderIDs!
+  titles: Titles!
+  status: AnimeStatus
+  format: AnimeFormat
+  media: MediaArtwork!
+  episodes: EpisodeData!
+  arcs: [Arc!]
+}
+
+"""
+Filter options for anime searches
+"""
+input AnimeSearchFilter {
+  status: AnimeStatus
+  format: AnimeFormat
+}
+
+"""
+Root Query entrypoints
+"""
+type Query {
+  """
+  Returns anime details for a given ID. Defaults to ANILIST provider if omitted.
+  """
+  getAnimeById(
+    """Anime ID string (e.g. "154587")"""
+    id: String!,
+    """Provider type of the ID. Defaults to ANILIST."""
+    provider: ProviderEnum
+  ): Anime
+
+  """
+  Searches anime by title text.
+  """
+  searchAnime(
+    """Text string to search in titles"""
+    query: String!,
+    """Optional search filters"""
+    filter: AnimeSearchFilter,
+    """Maximum number of results to return (default: 20)"""
+    limit: Int = 20,
+    """Page number (default: 1)"""
+    page: Int = 1
+  ): [Anime!]!
+
+  """
+  Returns external provider IDs (AniList, MAL, TMDB, TVDB, AniDB) linked to an anime ID.
+  """
+  getMappedProviderIds(
+    """Anime ID string"""
+    id: String!,
+    """Provider type of the input ID"""
+    provider: ProviderEnum!
+  ): ProviderIDs
+}
