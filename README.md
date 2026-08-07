@@ -1,3 +1,5 @@
+This repo is in early devlopment and its structure may not represent the final structure of v1 api
+
 # Anithing API
 
 A Node.js GraphQL API for querying anime data.
